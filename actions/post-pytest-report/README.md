@@ -35,7 +35,7 @@ steps:
   - name: Run tests
     run: pytest --json-report --json-report-file=report.json
 
-  - uses: flagos-ai/devops/actions/post-pytest-report@v1
+  - uses: flagos-ai/FlagOps/actions/post-pytest-report@v1
     with:
       backend_url: 'http://10.1.4.167:30180/flagcicd-backend/metrics/'
       report_path: 'report.json'
@@ -46,7 +46,7 @@ steps:
 ### With authentication and custom settings
 
 ```yaml
-  - uses: flagos-ai/devops/actions/post-pytest-report@v1
+  - uses: flagos-ai/FlagOps/actions/post-pytest-report@v1
     with:
       backend_url: 'http://10.1.4.167:30180/flagcicd-backend/metrics/'
       report_path: 'report.json'
@@ -60,7 +60,7 @@ steps:
 When running outside a PR context, `pr_id` is simply omitted from the request unless you explicitly set it:
 
 ```yaml
-  - uses: flagos-ai/devops/actions/post-pytest-report@v1
+  - uses: flagos-ai/FlagOps/actions/post-pytest-report@v1
     with:
       backend_url: 'http://10.1.4.167:30180/flagcicd-backend/metrics/'
       report_path: 'report.json'

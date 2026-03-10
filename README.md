@@ -5,7 +5,7 @@ This repository is the single source of truth for CI/CD logic across the **Flago
 ## 📁 Repository Structure
 
 ```text
-flagos-ai/devops/
+flagos-ai/FlagOps/
 ├── .github/
 │   └── workflows/          # Reusable Workflows (The "Whole Pipeline")
 │       └── ci-python.yml
@@ -38,7 +38,7 @@ on:
 
 jobs:
   run-standard-ci:
-    uses: flagos-ai/devops/.github/workflows/ci-python.yml@main
+    uses: flagos-ai/FlagOps/.github/workflows/ci-python.yml@main
     with:
       python-version: "3.11"
     secrets:
@@ -65,7 +65,7 @@ jobs:
       
       # Using a shared action from this repo
       - name: Setup Environment
-        uses: flagos-ai/devops/actions/setup-poetry@main
+        uses: flagos-ai/FlagOps/actions/setup-poetry@main
         with:
           install-dev-deps: "true"
 
@@ -79,8 +79,8 @@ jobs:
 
 For production-critical repositories, avoid using `@main`. Instead, reference a specific version tag or commit SHA to prevent breaking changes:
 
-* `uses: flagos-ai/devops/.github/workflows/ci-python.yml@v1.0.0`
-* `uses: flagos-ai/devops/actions/setup-poetry@v1.2.3`
+* `uses: flagos-ai/FlagOps/.github/workflows/ci-python.yml@v1.0.0`
+* `uses: flagos-ai/FlagOps/actions/setup-poetry@v1.2.3`
 
 ### 2. Contributions
 
