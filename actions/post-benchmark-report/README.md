@@ -1,77 +1,124 @@
-# Post Pytest Report Action
+# Post Benchmark Report Action
 
-A reusable GitHub Action that uploads a pytest JSON report to a backend HTTP service via multipart form POST.
+A reusable GitHub Action that uploads benchmark data to a backend service, configures list headers, and queries list data with pagination and sorting.
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |---|---|---|---|
-| `backend_url` | **yes** | — | Full URL of the backend metrics endpoint |
-| `report_path` | **yes** | — | Path to the pytest JSON report file |
+| `backend_url` | **yes** | — | Backend base URL (e.g. `http://host:port`) |
+| `report_path` | **yes** | — | Path to the benchmark JSON report file |
 | `api_token` | no | `""` | Bearer token for authentication |
-| `file_format` | no | `json` | File format identifier |
-| `file_type` | no | `pytest` | File type identifier |
-| `is_zipped` | no | `false` | Whether the file is zipped |
-| `git_project_name` | no | `${{ github.repository }}` | Project name |
-| `workflow_name` | no | `${{ github.workflow }}` | Workflow name |
-| `job_name` | no | `${{ github.job }}` | Job name |
-| `pr_id` | no | auto-detected | PR number (auto-detected from PR events, defaults to `0` for push events) |
-| `fail_on_error` | no | `true` | Whether to fail the step on upload error |
+| `list_code` | **yes** | — | List code identifier |
+| `list_name` | no | `list_code` value | List display name (defaults to `list_code` if empty) |
+| `header_config` | **yes** | — | JSON array of header config for custom table columns |
+| `repository_name` | no | `${{ github.repository }}` | Repository name |
+| `workflow_id` | no | `${{ github.run_id }}` | Workflow run ID |
+| `commit_id` | no | `${{ github.sha }}` | GitHub commit SHA |
+| `page_size` | no | `10` | Number of items per page for query |
+| `page` | no | `1` | Page number for query |
+| `sort` | no | `created_at` | Sort field for query |
+| `order` | no | `desc` | Sort direction (`asc` or `desc`) |
+| `fail_on_error` | no | `true` | Whether to fail the step on error |
 
 ## Outputs
 
 | Output | Description |
 |---|---|
-| `status` | HTTP status code from the upload request |
+| `header_status` | HTTP status code from the header config request |
+| `upload_status` | HTTP status code from the data upload request |
+| `query_status` | HTTP status code from the data query request |
+| `query_result` | JSON response from the data query request |
 
 ## Usage
 
-### Basic (in a pytest workflow)
+### Basic (in a benchmark workflow)
 
 ```yaml
 steps:
-  - name: Run pytest
-    id: pytest
+  - name: Run benchmark
+    id: benchmark
     run: |
-      pytest --json-report --json-report-file=benchmark_metrics.json
+      python run_benchmark.py --output benchmark_metrics.json
 
-  - name: Upload pytest report
-    if: steps.pytest.outcome == 'success'
+  - name: Upload benchmark report
+    if: steps.benchmark.outcome == 'success'
     uses: flagos-ai/FlagOps/actions/post-benchmark-report@main
     with:
-      backend_url: 'http://10.1.4.167:30180/flagcicd-backend/metrics/'
+      backend_url: 'http://10.1.4.167:30180'
       report_path: 'benchmark_metrics.json'
+      list_code: 'benchmark-list'
+      list_name: 'Benchmark Results'
+      header_config: |
+        [{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},
+         {"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]
 ```
 
-`workflow_name`, `job_name`, `pr_id`, and `git_project_name` are auto-detected from the GitHub context.
+`repository_name`, `workflow_id`, and `commit_id` are auto-detected from the GitHub context.
 
-### With authentication and custom settings
+### With authentication and query options
 
 ```yaml
   - uses: flagos-ai/FlagOps/actions/post-benchmark-report@main
     with:
-      backend_url: 'http://10.1.4.167:30180/flagcicd-backend/metrics/'
+      backend_url: 'http://10.1.4.167:30180'
       report_path: 'benchmark_metrics.json'
-      is_zipped: 'true'
+      list_code: 'perf-test'
+      header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"}]'
       api_token: ${{ secrets.BACKEND_TOKEN }}
-      job_name: 'pytest_unit_tests'
+      page_size: '20'
+      sort: 'updated_at'
+      order: 'asc'
       fail_on_error: 'false'
 ```
 
-### Non-PR context (push to main)
+## Report File Format
 
-When running outside a PR context, `pr_id` defaults to `0`:
+The benchmark JSON report file should have the following structure:
 
-```yaml
-  - uses: flagos-ai/FlagOps/actions/post-benchmark-report@main
-    with:
-      backend_url: 'http://10.1.4.167:30180/flagcicd-backend/metrics/'
-      report_path: 'benchmark_metrics.json'
-      pr_id: '0'  # optional explicit override
+```json
+{
+  "metric_name": {
+    "values": [1.23, 4.56, 7.89]
+  },
+  "another_metric": {
+    "values": [10, 20, 30]
+  }
+}
+```
+
+Each key is a metric name, and its `values` array contains the data points. The action transforms this into the upload payload automatically.
+
+## `header_config` Format
+
+`header_config` is a JSON array describing the columns of the report list. Each item has the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `field` | string | Column field key |
+| `name` | string | Column display name |
+| `required` | boolean | Whether the column is required |
+| `sortable` | boolean | Whether the column is sortable |
+| `type` | string | Data type (`string`, `number`, etc.) |
+
+Example:
+
+```json
+[
+  {
+    "field": "username",
+    "name": "用户名",
+    "required": true,
+    "sortable": true,
+    "type": "string"
+  }
+]
 ```
 
 ## Behavior
 
-- **Auto-detection**: `git_project_name`, `workflow_name`, `job_name`, and `pr_id` are auto-populated from GitHub context variables. Any of them can be overridden by setting the input explicitly.
-- **pr_id fallback**: If no PR context is available and `pr_id` is not set, it defaults to `0`.
-- **Error handling**: Controlled by `fail_on_error`. When `true` (default), a failed upload or missing report file fails the workflow step. When `false`, a warning is logged and the step succeeds.
+1. **Resolve inputs**: Defaults are populated from GitHub context (`github.repository`, `github.run_id`, `github.sha`). If `list_name` is empty, it defaults to `list_code`.
+2. **Post header config**: Sends the header configuration to `{backend_url}/flagcicd-backend/list/header`. If the list code already exists, the step is treated as a no-op.
+3. **Upload data**: Reads the report file, transforms it into items, and POSTs to `{backend_url}/flagcicd-backend/list/data/{list_code}`.
+4. **Query data**: After a successful upload, queries the list data with pagination and sorting from `{backend_url}/flagcicd-backend/list/data/{list_code}`.
+5. **Error handling**: Controlled by `fail_on_error`. When `true` (default), a failed request or missing report file fails the workflow step. When `false`, a warning is logged and the step succeeds.
