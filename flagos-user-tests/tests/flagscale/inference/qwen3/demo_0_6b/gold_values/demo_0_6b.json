@@ -1,0 +1,12 @@
+{
+  "inference_output": {
+    "type": "text",
+    "pattern": "output\\.outputs\\[0\\]\\.text=(?:\"(.+?)\"$|'(.+?)'$)",
+    "values": [
+      " Lina. I'm a 22-year",
+      " the same as the president of the United Nations.",
+      " Paris. The capital of France is also the capital",
+      " not just a technological challenge but a profound transformation of"
+    ]
+  }
+}

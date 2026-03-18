@@ -1,0 +1,85 @@
+name: PR Validation - User Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "flagos-user-tests/**"
+
+defaults:
+  run:
+    working-directory: flagos-user-tests
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      # Get the actual list of changed files in the PR (github.event.pull_request.changed_files is just a count)
+      - name: Get changed files
+        id: changed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner: context.repo.owner, repo: context.repo.repo, pull_number: context.issue.number }
+            );
+            const changed = files
+              .map(f => f.filename)
+              .filter(f => f.startsWith('flagos-user-tests/'))
+              .map(f => f.replace('flagos-user-tests/', ''));
+            core.setOutput('files', changed.join(','));
+
+      # Step 1: Schema validation — only validate changed files
+      - name: Validate YAML/JSON Schema
+        run: |
+          python tools/validators/validate_config.py \
+            --changed-files "${{ steps.changed.outputs.files }}"
+
+      # Step 2: Required fields check
+      - name: Check Required Fields
+        run: python tools/validators/lint_test_case.py --strict
+
+      # Step 3: Gold values format validation
+      - name: Validate Gold Values
+        run: python tools/validators/validate_gold_values.py
+
+      # Step 4: Documentation completeness check
+      - name: Check Documentation
+        run: |
+          errors=0
+          # Skip sub-config directories (conf/train/data etc.)
+          SUB_CONFIG_DIRS="conf train inference data"
+          for dir in $(find tests -mindepth 3 -maxdepth 5 -type d); do
+            dirname=$(basename "$dir")
+            # Skip sub-config directories
+            skip=false
+            for sub in $SUB_CONFIG_DIRS; do
+              if [ "$dirname" = "$sub" ]; then skip=true; break; fi
+            done
+            if [ "$skip" = "true" ]; then continue; fi
+
+            # If the directory contains .yaml files, check for README.md
+            if ls "$dir"/*.yaml 1>/dev/null 2>&1; then
+              if [ ! -f "$dir/README.md" ]; then
+                echo "ERROR: Missing README.md in $dir"
+                errors=$((errors + 1))
+              fi
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "Found $errors test case directories without README.md"
+            exit 1
+          fi
+          echo "All test case directories have README.md"

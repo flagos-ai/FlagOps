@@ -1,0 +1,42 @@
+# FlagOS DevOps - Code Owners
+
+# Default owners for everything
+* @flagos-ai/devops-team
+
+# CI/CD workflows
+.github/ @flagos-ai/devops-team
+
+# Shared actions
+actions/ @flagos-ai/devops-team
+
+# === User Tests ===
+
+# FlagScale test cases
+flagos-user-tests/tests/flagscale/ @flagos-ai/flagscale-team
+
+# FlagGems test cases
+flagos-user-tests/tests/flaggems/ @flagos-ai/flaggems-team
+
+# FlagCX test cases
+flagos-user-tests/tests/flagcx/ @flagos-ai/flagcx-team
+
+# FlagTree test cases
+flagos-user-tests/tests/flagtree/ @flagos-ai/flagtree-team
+
+# vLLM-FL test cases
+flagos-user-tests/tests/vllm-fl/ @flagos-ai/vllm-team
+
+# vLLM-plugin-FL test cases
+flagos-user-tests/tests/vllm-plugin-fl/ @flagos-ai/vllm-team
+
+# TE-FL test cases
+flagos-user-tests/tests/te-fl/ @flagos-ai/te-team
+
+# Megatron-LM-FL test cases
+flagos-user-tests/tests/megatron-lm-fl/ @flagos-ai/megatron-team
+
+# Experimental test cases
+flagos-user-tests/tests/experimental/ @flagos-ai/devops-team
+
+# Validation tools
+flagos-user-tests/tools/ @flagos-ai/devops-team

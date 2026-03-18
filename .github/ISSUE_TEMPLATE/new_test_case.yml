@@ -1,0 +1,94 @@
+name: New Test Case Submission
+description: Submit a new test case for FlagOS repositories
+title: "[Test Case] "
+labels: ["new-test-case"]
+body:
+  - type: dropdown
+    id: target-repo
+    attributes:
+      label: Target Repository
+      description: Which FlagOS repository is this test case for?
+      options:
+        - FlagScale
+        - FlagGems
+        - FlagCX
+        - FlagTree
+        - vLLM-FL
+        - vLLM-plugin-FL
+        - TE-FL
+        - Megatron-LM-FL
+    validations:
+      required: true
+
+  - type: dropdown
+    id: test-type
+    attributes:
+      label: Test Type
+      description: What type of test is this?
+      options:
+        - train
+        - inference
+        - hetero_train
+        - unit
+        - integration
+        - benchmark
+    validations:
+      required: true
+
+  - type: input
+    id: model-name
+    attributes:
+      label: Model Name
+      description: Name of the model being tested (if applicable)
+      placeholder: e.g., llama2, mixtral, deepseek
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Test Case Description
+      description: Describe what this test case validates
+      placeholder: |
+        This test case validates ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: Paste the YAML configuration for the test case
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    id: gold-values
+    attributes:
+      label: Gold Values
+      description: Paste the expected gold values (JSON format)
+      render: json
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Requirements
+      description: Describe the hardware/software requirements
+      placeholder: |
+        - GPU: 8x A100 80GB
+        - CUDA: 12.1
+        - Python: 3.10
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: I have tested this test case locally
+          required: true
+        - label: I have included gold values (if applicable)
+        - label: I have added a README.md with test description
+          required: true
+        - label: My YAML configuration follows the schema specification
+          required: true

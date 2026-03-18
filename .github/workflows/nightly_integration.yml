@@ -1,0 +1,94 @@
+name: Nightly Integration Test - User Tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: flagos-user-tests
+
+jobs:
+  discover-cases:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Discover all test cases and resolve runner labels
+        id: resolve
+        working-directory: flagos-user-tests
+        run: |
+          python3 -c "
+          import json, os, sys
+          sys.path.insert(0, 'tools')
+          from run_user_tests import list_test_resources
+          from pathlib import Path
+
+          root = Path('.')
+          resources_list = list_test_resources(root)
+
+          matrix_entries = []
+          for entry in resources_list:
+              matrix_entries.append({
+                  'case_path': entry['case_path'],
+                  'runner_labels': json.dumps(entry['runner_labels']),
+              })
+
+          if not matrix_entries:
+              matrix_entries.append({
+                  'case_path': '_none_',
+                  'runner_labels': json.dumps(['ubuntu-latest']),
+              })
+
+          matrix = {'include': matrix_entries}
+          output = json.dumps(matrix)
+          print(f'Matrix: {output}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'matrix={output}\n')
+          "
+
+  run-tests:
+    needs: discover-cases
+    if: ${{ !contains(needs.discover-cases.outputs.matrix, '_none_') }}
+    runs-on: ${{ fromJson(matrix.runner_labels) }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-cases.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runner dependencies
+        run: pip install pyyaml
+
+      - name: Run test case
+        run: python tools/run_user_tests.py --case ${{ matrix.case_path }}
+
+  notify:
+    needs: run-tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Nightly Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "Date: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY

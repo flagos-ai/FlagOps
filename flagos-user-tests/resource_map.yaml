@@ -1,0 +1,99 @@
+# Maps test case resource requirements to GitHub Actions runner labels and container images.
+#
+# Architecture: platform-based multi-vendor support
+#   resources.platform  -> platforms.<name>  -> runner labels, container images, options
+#
+# Example test case YAML:
+#   resources:
+#     platform: cuda
+#     device: A100-40GB
+#     device_count: 1
+#
+# Resolution chain:
+#   1. resources.platform -> platforms.cuda
+#   2. platforms.cuda.device_labels["A100-40GB"] -> runner labels
+#   3. platforms.cuda.container_images["flagscale/inference"] -> Docker image
+#   4. platforms.cuda.container_options -> Docker runtime flags
+
+# =============================================================================
+# Platforms: each vendor/chip family is a platform
+# =============================================================================
+platforms:
+
+  # ---------------------------------------------------------------------------
+  # NVIDIA CUDA platform
+  # ---------------------------------------------------------------------------
+  cuda:
+    description: "NVIDIA CUDA GPUs (A100, H100, H800, etc.)"
+
+    # Device type -> self-hosted runner labels
+    device_labels:
+      A100-40GB:  [self-hosted, Linux, X64, gpu-a100-40gb]
+      A100-80GB:  [self-hosted, Linux, X64, gpu-a100-80gb]
+      H100-80GB:  [self-hosted, Linux, X64, gpu-h100-80gb]
+      H800-80GB:  [self-hosted, Linux, X64, gpu-h800-80gb]
+
+    # Default runner labels when device type not found
+    default_labels: [self-hosted, Linux, X64]
+
+    # Container images: "<repo>/<task>" -> Docker image
+    container_images:
+      flagscale/train:        "localhost:5000/flagscale-train:dev-cu128-py3.12-20260228210721"
+      flagscale/inference:    "localhost:5000/flagscale-inference:dev-cu128-py3.12-20260302102033"
+      flagscale/hetero_train: "localhost:5000/flagscale-train:dev-cu128-py3.12-20260228210721"
+
+    # Container runtime options
+    container_options: "--gpus all --shm-size=500g --user root --ulimit nofile=65535:65535"
+
+    # Container volume mounts (host:container)
+    container_volumes:
+      - /home/flagscale_cicd/docker/docker_build/docker_data:/home/gitlab-runner/data
+      - /home/flagscale_cicd/docker/docker_build/docker_tokenizers:/home/gitlab-runner/tokenizers
+
+  # ---------------------------------------------------------------------------
+  # MetaX (Muxi) platform — placeholder for future integration
+  # ---------------------------------------------------------------------------
+  metax:
+    description: "MetaX (Muxi) GPUs (C500, etc.)"
+
+    device_labels:
+      C500: [self-hosted, Linux, X64, metax-c500]
+
+    default_labels: [self-hosted, Linux, X64, metax]
+
+    container_images: {}
+      # flagscale/train: "registry.example.com/flagscale-train:metax-..."
+      # flagscale/inference: "registry.example.com/flagscale-inference:metax-..."
+
+    container_options: "--device /dev/mxgpu_all --shm-size=500g --user root"
+
+    container_volumes: []
+
+  # ---------------------------------------------------------------------------
+  # Ascend (Huawei) platform — placeholder for future integration
+  # ---------------------------------------------------------------------------
+  ascend:
+    description: "Huawei Ascend NPUs (910B, 910C, etc.)"
+
+    device_labels:
+      Ascend910B: [self-hosted, Linux, aarch64, ascend-910b]
+      Ascend910C: [self-hosted, Linux, aarch64, ascend-910c]
+
+    default_labels: [self-hosted, Linux, aarch64, ascend]
+
+    container_images: {}
+      # flagscale/train: "registry.example.com/flagscale-train:ascend-..."
+
+    container_options: "--device /dev/davinci_all --shm-size=500g --user root"
+
+    container_volumes: []
+
+# =============================================================================
+# Global defaults
+# =============================================================================
+
+# Default platform when resources.platform is not specified
+default_platform: cuda
+
+# Fallback runner labels when nothing matches
+default_labels: [self-hosted]
