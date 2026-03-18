@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           if [ -n "${{ matrix.conda_env }}" ]; then
-            source flagos-user-tests/tools/activate_conda.sh ${{ matrix.conda_env }}
+            source tools/activate_conda.sh ${{ matrix.conda_env }}
           fi
           pip install pyyaml
 
@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: |
           if [ -n "${{ matrix.conda_env }}" ]; then
-            source flagos-user-tests/tools/activate_conda.sh ${{ matrix.conda_env }}
+            source tools/activate_conda.sh ${{ matrix.conda_env }}
           fi
           ARGS=""
           if [ -n "${{ matrix.case_path }}" ]; then
