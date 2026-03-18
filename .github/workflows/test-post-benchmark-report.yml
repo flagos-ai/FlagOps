@@ -318,3 +318,51 @@ jobs:
           else
             echo "::warning::Could not verify custom run_id (got: $RUN_ID)"
           fi
+
+  test-object-value-subfield-extraction:
+    name: Object values are extracted by sub-field names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create benchmark report with object values
+        run: |
+          cat > benchmark_metrics.json <<'EOF'
+          {
+            "latency": {"p50": 1.2, "p99": 3.4, "mean": 2.0},
+            "throughput": {"p50": 100, "p99": 80, "mean": 95}
+          }
+          EOF
+
+      - name: Run post-benchmark-report with multi-field header_config
+        id: upload
+        uses: ./actions/post-benchmark-report
+        with:
+          backend_url: https://httpbin.org/anything
+          report_path: benchmark_metrics.json
+          list_code: 'test-object-value'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"},{"field":"mean","name":"Mean","required":true,"sortable":true,"type":"number"}]'
+          fail_on_error: 'false'
+
+      - name: Verify sub-fields extracted correctly
+        run: |
+          RESPONSE=$(cat /tmp/upload_response.txt 2>/dev/null || echo '{}')
+          echo "Response: $RESPONSE"
+
+          # Verify first item (latency)
+          METRIC=$(echo "$RESPONSE" | jq -r '.json.items[0].metric // empty')
+          P50=$(echo "$RESPONSE" | jq -r '.json.items[0].p50 // empty')
+          P99=$(echo "$RESPONSE" | jq -r '.json.items[0].p99 // empty')
+          MEAN=$(echo "$RESPONSE" | jq -r '.json.items[0].mean // empty')
+
+          echo "metric=$METRIC p50=$P50 p99=$P99 mean=$MEAN"
+
+          [ "$METRIC" = "latency" ] && echo "metric correct" || echo "::warning::metric mismatch (got: $METRIC)"
+          [ "$P50" = "1.2" ] && echo "p50 correct" || echo "::warning::p50 mismatch (got: $P50)"
+          [ "$P99" = "3.4" ] && echo "p99 correct" || echo "::warning::p99 mismatch (got: $P99)"
+          [ "$MEAN" = "2" ] && echo "mean correct" || echo "::warning::mean mismatch (got: $MEAN)"
+
+          # Verify item count
+          COUNT=$(echo "$RESPONSE" | jq '.json.items | length')
+          echo "items count: $COUNT"
+          [ "$COUNT" = "2" ] && echo "item count correct" || echo "::warning::expected 2 items (got: $COUNT)"

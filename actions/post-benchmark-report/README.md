@@ -65,7 +65,9 @@ steps:
       backend_url: 'http://10.1.4.167:30180'
       report_path: 'benchmark_metrics.json'
       list_code: 'perf-test'
-      header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"}]'
+      header_config: |
+        [{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},
+         {"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]
       api_token: ${{ secrets.BACKEND_TOKEN }}
       page_size: '20'
       sort: 'updated_at'
@@ -73,9 +75,40 @@ steps:
       fail_on_error: 'false'
 ```
 
+### With object-valued metrics (sub-field extraction)
+
+```yaml
+steps:
+  - name: Upload benchmark report
+    uses: flagos-ai/FlagOps/actions/post-benchmark-report@main
+    with:
+      backend_url: 'http://10.1.4.167:30180'
+      report_path: 'benchmark_metrics.json'
+      list_code: 'latency-benchmark'
+      list_name: 'Latency Benchmark'
+      header_config: |
+        [{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},
+         {"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},
+         {"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"},
+         {"field":"mean","name":"Mean","required":true,"sortable":true,"type":"number"}]
+```
+
+Where `benchmark_metrics.json` contains:
+
+```json
+{
+  "latency": {"p50": 1.2, "p99": 3.4, "mean": 2.0},
+  "throughput": {"p50": 100, "p99": 80, "mean": 95}
+}
+```
+
 ## Report File Format
 
-The benchmark JSON report file should be a key-value object where each key is a metric name and the value is an array of data points:
+The benchmark JSON report file should be a key-value object where each key is a metric name. The value supports two formats:
+
+### Format 1: Array / Primitive value
+
+Each value is an array (or string/number). All `header_config` fields beyond the first receive the entire value.
 
 ```json
 {
@@ -84,21 +117,16 @@ The benchmark JSON report file should be a key-value object where each key is a 
 }
 ```
 
-The action uses `header_config` to dynamically determine field names in the upload payload:
-
-- `header_config[0].field` → mapped to each entry's **key** (metric name)
-- `header_config[1].field` → mapped to each entry's **value** (data array)
-
-For example, with `header_config`:
+With `header_config`:
 
 ```json
 [
-  {"field": "metric", "name": "Metric", "required": true, "sortable": true, "type": "string"},
-  {"field": "values", "name": "Values", "required": true, "sortable": true, "type": "number"}
+  {"field": "metric", "name": "Metric", "type": "string", ...},
+  {"field": "values", "name": "Values", "type": "number", ...}
 ]
 ```
 
-The above report is transformed into:
+Transformed payload:
 
 ```json
 {
@@ -108,6 +136,44 @@ The above report is transformed into:
   ]
 }
 ```
+
+### Format 2: Object value (sub-field extraction)
+
+Each value is an object with named sub-fields. `header_config` fields beyond the first each extract the matching sub-field by `field` name.
+
+```json
+{
+  "latency": {"p50": 1.2, "p99": 3.4, "mean": 2.0},
+  "throughput": {"p50": 100, "p99": 80, "mean": 95}
+}
+```
+
+With `header_config`:
+
+```json
+[
+  {"field": "metric", "name": "Metric", "type": "string", ...},
+  {"field": "p50",    "name": "P50",    "type": "number", ...},
+  {"field": "p99",    "name": "P99",    "type": "number", ...},
+  {"field": "mean",   "name": "Mean",   "type": "number", ...}
+]
+```
+
+Transformed payload:
+
+```json
+{
+  "items": [
+    {"metric": "latency", "p50": 1.2, "p99": 3.4, "mean": 2.0, "commit_id": "...", ...},
+    {"metric": "throughput", "p50": 100, "p99": 80, "mean": 95, "commit_id": "...", ...}
+  ]
+}
+```
+
+### Transform rules
+
+- `header_config[0].field` → always mapped to each entry's **key** (metric name)
+- `header_config[1+].field` → if value is an **object**, extracts `value[field]`; otherwise uses the **entire value**
 
 ## `header_config` Format
 
@@ -139,6 +205,6 @@ Example:
 
 1. **Resolve inputs**: Defaults are populated from GitHub context (`github.repository`, `github.run_id`, `github.sha`). `run_id` also defaults to `github.run_id`. If `list_name` is empty, it defaults to `list_code`.
 2. **Post header config**: Sends the header configuration to `{backend_url}/flagcicd-backend/list/header`. If the list code already exists, the step is treated as a no-op.
-3. **Upload data**: Reads the report file, uses `header_config` to dynamically map field names, and POSTs to `{backend_url}/flagcicd-backend/list/data/{list_code}`. Each item includes `commit_id`, `repository_name`, `workflow_id`, and `run_id`.
+3. **Upload data**: Reads the report file and transforms entries using `header_config`. The first header field receives the metric key; subsequent fields receive sub-fields from the value (if it's an object) or the entire value (if it's an array/primitive). POSTs to `{backend_url}/flagcicd-backend/list/data/{list_code}`. Each item includes `commit_id`, `repository_name`, `workflow_id`, and `run_id`.
 4. **Query data**: After a successful upload, queries the list data with pagination and sorting from `{backend_url}/flagcicd-backend/list/data/{list_code}`.
 5. **Error handling**: Controlled by `fail_on_error`. When `true` (default), a failed request or missing report file fails the workflow step. When `false`, a warning is logged and the step succeeds.
