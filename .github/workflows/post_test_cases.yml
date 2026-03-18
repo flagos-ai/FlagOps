@@ -1,0 +1,48 @@
+name: Post Test Cases Report
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+defaults:
+  run:
+    working-directory: flagos-user-tests
+
+jobs:
+  post-report:
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Collect test cases
+        run: python tools/collect_test_cases.py --output test_cases_report.json
+
+      - name: Post report
+        uses: ./actions/post-benchmark-report
+        with:
+          backend_url: ${{ secrets.FLAGOPS_BACKEND_URL }}
+          api_token: ${{ secrets.FLAGOPS_API_TOKEN }}
+          report_path: flagos-user-tests/test_cases_report.json
+          list_code: flagops-user-test-cases
+          list_name: FlagOps User Test Cases
+          header_config: >-
+            [
+              {"field": "case_id",    "name": "用例ID",     "required": true,  "sortable": true,  "type": "string"},
+              {"field": "case_name",  "name": "用例名称",   "required": true,  "sortable": false, "type": "string"},
+              {"field": "repo",       "name": "所属子仓库", "required": true,  "sortable": true,  "type": "string"},
+              {"field": "updated_at", "name": "更新时间",   "required": true,  "sortable": true,  "type": "string"}
+            ]
+          fail_on_error: "false"

@@ -15,7 +15,7 @@ Runs 4 prompts with greedy decoding (temperature=0, max_tokens=10) and verifies 
 ## How to Run
 
 ```bash
-git clone https://github.com/FlagOpen/FlagScale.git && cd FlagScale && pip install .
+git clone https://github.com/flagos-ai/FlagScale.git && cd FlagScale && pip install .
 flagscale inference qwen3 --config ./conf/demo_0_6b.yaml
 ```
 

@@ -20,7 +20,7 @@ env:
   CUDA_DEVICE_MAX_CONNECTIONS: "1"
 
 setup:
-  - git clone https://github.com/FlagOpen/FlagScale.git && cd FlagScale && pip install .
+  - git clone https://github.com/flagos-ai/FlagScale.git && cd FlagScale && pip install .
 
 run:
   - flagscale inference qwen3 --config ./conf/demo_0_6b.yaml --test

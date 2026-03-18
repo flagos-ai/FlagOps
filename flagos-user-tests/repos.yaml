@@ -5,41 +5,41 @@
 
 repositories:
   flagscale:
-    url: https://github.com/FlagOpen/FlagScale.git
+    url: https://github.com/flagos-ai/FlagScale.git
     default_branch: main
     description: Large-scale distributed training framework
 
   flaggems:
-    url: https://github.com/FlagOpen/FlagGems.git
+    url: https://github.com/flagos-ai/FlagGems.git
     default_branch: main
     description: GPU-accelerated math library
 
   flagcx:
-    url: https://github.com/FlagOpen/FlagCX.git
+    url: https://github.com/flagos-ai/FlagCX.git
     default_branch: main
     description: Cross-chip communication library
 
   flagtree:
-    url: https://github.com/FlagOpen/FlagTree.git
+    url: https://github.com/flagos-ai/FlagTree.git
     default_branch: main
     description: Tree-structured computation library
 
   vllm-fl:
-    url: https://github.com/FlagOpen/vLLM-FL.git
+    url: https://github.com/flagos-ai/vLLM-FL.git
     default_branch: main
     description: LLM inference engine
 
   vllm-plugin-fl:
-    url: https://github.com/FlagOpen/vLLM-plugin-FL.git
+    url: https://github.com/flagos-ai/vLLM-plugin-FL.git
     default_branch: main
     description: vLLM plugin system
 
   te-fl:
-    url: https://github.com/FlagOpen/TransformerEngine-FL.git
+    url: https://github.com/flagos-ai/TransformerEngine-FL.git
     default_branch: main
     description: Transformer Engine
 
   megatron-lm-fl:
-    url: https://github.com/FlagOpen/Megatron-LM-FL.git
+    url: https://github.com/flagos-ai/Megatron-LM-FL.git
     default_branch: main
     description: Megatron-LM fork
