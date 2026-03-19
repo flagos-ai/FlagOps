@@ -36,6 +36,10 @@ inputs:
     description: 'Job name (defaults to github.job)'
     required: false
     default: ''
+  run_id:
+    description: 'GitHub Actions run ID (defaults to github.run_id)'
+    required: false
+    default: ''
   pr_id:
     description: 'Pull request number (auto-detected from PR events if not set)'
     required: false
@@ -77,6 +81,13 @@ runs:
           JOB_NAME="${{ github.job }}"
         fi
         echo "job_name=$JOB_NAME" >> "$GITHUB_OUTPUT"
+
+        # Resolve run_id
+        RUN_ID="${{ inputs.run_id }}"
+        if [ -z "$RUN_ID" ]; then
+          RUN_ID="${{ github.run_id }}"
+        fi
+        echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
         # Resolve pr_id
         PR_ID="${{ inputs.pr_id }}"
@@ -123,6 +134,9 @@ runs:
         if [ -n "$PR_ID" ]; then
           CURL_ARGS+=(-F "pr_id=$PR_ID")
         fi
+
+        # Add run_id
+        CURL_ARGS+=(-F "run_id=${{ steps.resolve.outputs.run_id }}")
 
         # Add the file
         CURL_ARGS+=(-F "file=@${{ inputs.report_path }}")

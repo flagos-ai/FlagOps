@@ -77,7 +77,7 @@ jobs:
           echo "Response: $RESPONSE"
 
           # httpbin echoes form fields back under "form" key
-          for field in git_project_name workflow_name job_name; do
+          for field in git_project_name workflow_name job_name run_id; do
             VALUE=$(echo "$RESPONSE" | jq -r ".form.${field} // empty")
             if [ -z "$VALUE" ]; then
               echo "::error::Field '$field' was empty or missing in upload"
