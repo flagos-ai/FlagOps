@@ -144,7 +144,7 @@ Example:
 [
   {
     "field": "username",
-    "name": "用户名",
+    "name": "Username",
     "required": true,
     "sortable": true,
     "type": "string"
@@ -183,7 +183,7 @@ Example:
    }
    ```
 
-2. **`header_config[0]` maps to the metric key**: The first entry in `header_config` is always mapped to each report entry's key (the metric name). Do not duplicate this field inside the report value objects.
+2. **`header_config[0]` maps to the metric key**: The first entry in `header_config` does not extract a field from the report value object. Instead, it is automatically mapped to each report entry's **key** (the metric name). For example, if `header_config[0]` is `{"field": "metric", ...}`, then the key `"latency"` in `{"latency": {...}}` will be assigned to the `"metric"` field. Therefore, do **not** duplicate this field inside the report value objects.
 
    ```jsonc
    // header_config[0] is {"field": "metric", ...}, it automatically takes the report key
