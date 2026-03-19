@@ -15,6 +15,7 @@ A reusable GitHub Action that uploads a pytest JSON report to a backend HTTP ser
 | `git_project_name` | no | `${{ github.repository }}` | Project name |
 | `workflow_name` | no | `${{ github.workflow }}` | Workflow name |
 | `job_name` | no | `${{ github.job }}` | Job name |
+| `run_id` | no | `${{ github.run_id }}` | GitHub Actions run ID |
 | `pr_id` | no | auto-detected | PR number (auto-detected from PR events) |
 | `fail_on_error` | no | `true` | Whether to fail the step on upload error |
 
@@ -41,7 +42,7 @@ steps:
       report_path: 'report.json'
 ```
 
-`workflow_name`, `job_name`, `pr_id`, and `git_project_name` are auto-detected from the GitHub context.
+`workflow_name`, `job_name`, `pr_id`, `run_id`, and `git_project_name` are auto-detected from the GitHub context.
 
 ### With authentication and custom settings
 
@@ -69,6 +70,6 @@ When running outside a PR context, `pr_id` is simply omitted from the request un
 
 ## Behavior
 
-- **Auto-detection**: `git_project_name`, `workflow_name`, `job_name`, and `pr_id` are auto-populated from GitHub context variables. Any of them can be overridden by setting the input explicitly.
+- **Auto-detection**: `git_project_name`, `workflow_name`, `job_name`, `run_id`, and `pr_id` are auto-populated from GitHub context variables. Any of them can be overridden by setting the input explicitly.
 - **Optional pr_id**: If no PR context is available and `pr_id` is not set, the field is omitted from the request entirely.
 - **Error handling**: Controlled by `fail_on_error`. When `true` (default), a failed upload or missing report file fails the workflow step. When `false`, a warning is logged and the step succeeds.
