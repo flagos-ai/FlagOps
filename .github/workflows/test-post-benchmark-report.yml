@@ -22,8 +22,8 @@ jobs:
         run: |
           cat > benchmark_metrics.json <<'EOF'
           {
-            "elapsed time per iteration (ms):": [8572.3, 766.4, 308.1, 306.5, 306.5],
-            "throughput per GPU (TFLOP/s/GPU):": [1.4, 16.2, 39.9, 39.5, 40.4]
+            "latency": {"p50": 1.2, "p99": 3.4, "mean": 2.0},
+            "throughput": {"p50": 100, "p99": 80, "mean": 95}
           }
           EOF
 
@@ -35,7 +35,7 @@ jobs:
           report_path: benchmark_metrics.json
           list_code: 'test-benchmark'
           list_name: 'Test Benchmark'
-          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"},{"field":"mean","name":"Mean","required":true,"sortable":true,"type":"number"}]'
           fail_on_error: 'false'
 
       - name: Check all outputs exist
@@ -105,8 +105,8 @@ jobs:
         run: |
           cat > benchmark_metrics.json <<'EOF'
           {
-            "elapsed time per iteration (ms):": [308.1, 306.5],
-            "throughput per GPU (TFLOP/s/GPU):": [39.9, 40.4]
+            "latency": {"p50": 1.2, "p99": 3.4},
+            "throughput": {"p50": 100, "p99": 80}
           }
           EOF
 
@@ -117,7 +117,7 @@ jobs:
           backend_url: https://httpbin.org/anything
           report_path: benchmark_metrics.json
           list_code: 'test-defaults'
-          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
           fail_on_error: 'false'
 
       - name: Verify resolved defaults via upload response
@@ -156,8 +156,8 @@ jobs:
         run: |
           cat > benchmark_metrics.json <<'EOF'
           {
-            "elapsed time per iteration (ms):": [306.5],
-            "throughput per GPU (TFLOP/s/GPU):": [40.4]
+            "latency": {"p50": 1.2, "p99": 3.4},
+            "throughput": {"p50": 100, "p99": 80}
           }
           EOF
 
@@ -168,7 +168,7 @@ jobs:
           backend_url: https://httpbin.org/anything
           report_path: benchmark_metrics.json
           list_code: 'my-list-code'
-          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
           fail_on_error: 'false'
 
       - name: Verify list_name defaulted to list_code
@@ -196,8 +196,8 @@ jobs:
         run: |
           cat > benchmark_metrics.json <<'EOF'
           {
-            "elapsed time per iteration (ms):": [766.4, 308.1],
-            "throughput per GPU (TFLOP/s/GPU):": [16.2, 39.9]
+            "latency": {"p50": 1.2, "p99": 3.4},
+            "throughput": {"p50": 100, "p99": 80}
           }
           EOF
 
@@ -208,7 +208,7 @@ jobs:
           backend_url: https://httpbin.org/anything
           report_path: benchmark_metrics.json
           list_code: 'test-pagination'
-          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
           page_size: '5'
           page: '2'
           sort: 'updated_at'
@@ -248,8 +248,8 @@ jobs:
         run: |
           cat > benchmark_metrics.json <<'EOF'
           {
-            "elapsed time per iteration (ms):": [8572.3],
-            "throughput per GPU (TFLOP/s/GPU):": [1.4]
+            "latency": {"p50": 1.2, "p99": 3.4},
+            "throughput": {"p50": 100, "p99": 80}
           }
           EOF
 
@@ -260,7 +260,7 @@ jobs:
           backend_url: https://httpbin.org/anything
           report_path: benchmark_metrics.json
           list_code: 'test-auth'
-          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
           api_token: 'test-token-abc123'
           fail_on_error: 'false'
 
@@ -289,8 +289,8 @@ jobs:
         run: |
           cat > benchmark_metrics.json <<'EOF'
           {
-            "elapsed time per iteration (ms):": [306.5, 306.5],
-            "throughput per GPU (TFLOP/s/GPU):": [39.5, 40.4]
+            "latency": {"p50": 1.2, "p99": 3.4},
+            "throughput": {"p50": 100, "p99": 80}
           }
           EOF
 
@@ -301,7 +301,7 @@ jobs:
           backend_url: https://httpbin.org/anything
           report_path: benchmark_metrics.json
           list_code: 'test-run-id'
-          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"value","name":"Value","required":true,"sortable":true,"type":"number"}]'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
           run_id: 'custom-run-12345'
           fail_on_error: 'false'
 
@@ -366,3 +366,70 @@ jobs:
           COUNT=$(echo "$RESPONSE" | jq '.json.items | length')
           echo "items count: $COUNT"
           [ "$COUNT" = "2" ] && echo "item count correct" || echo "::warning::expected 2 items (got: $COUNT)"
+
+  test-validation-fails-on-non-object-values:
+    name: Validation fails when report values are not objects
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create report with array values (invalid format)
+        run: |
+          cat > benchmark_metrics.json <<'EOF'
+          {
+            "elapsed time": [8572.3, 766.4, 308.1],
+            "throughput": [1.4, 16.2, 39.9]
+          }
+          EOF
+
+      - name: Run post-benchmark-report with invalid report (fail_on_error=true)
+        id: upload
+        continue-on-error: true
+        uses: ./actions/post-benchmark-report
+        with:
+          backend_url: https://httpbin.org/anything
+          report_path: benchmark_metrics.json
+          list_code: 'test-validation'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"}]'
+          fail_on_error: 'true'
+
+      - name: Assert step failed due to validation
+        run: |
+          if [ "${{ steps.upload.outcome }}" != "failure" ]; then
+            echo "::error::Expected failure but got ${{ steps.upload.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly failed on non-object report values"
+
+  test-validation-warns-on-missing-fields:
+    name: Validation warns when report is missing expected fields
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create report with missing sub-fields
+        run: |
+          cat > benchmark_metrics.json <<'EOF'
+          {
+            "latency": {"p50": 1.2},
+            "throughput": {"p50": 100}
+          }
+          EOF
+
+      - name: Run post-benchmark-report with mismatched fields (fail_on_error=false)
+        id: upload
+        uses: ./actions/post-benchmark-report
+        with:
+          backend_url: https://httpbin.org/anything
+          report_path: benchmark_metrics.json
+          list_code: 'test-validation-warn'
+          header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
+          fail_on_error: 'false'
+
+      - name: Assert step succeeded with warning
+        run: |
+          if [ "${{ steps.upload.outcome }}" != "success" ]; then
+            echo "::error::Expected success but got ${{ steps.upload.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly warned but did not fail on missing fields"
