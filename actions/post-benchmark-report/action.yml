@@ -8,6 +8,9 @@ inputs:
   report_path:
     description: 'Path to the benchmark JSON report file'
     required: true
+  user_id:
+    description: 'User ID sent as x-user-id header (treat as a secret)'
+    required: true
   api_token:
     description: 'Bearer token for authentication (optional)'
     required: false
@@ -117,6 +120,12 @@ runs:
         fi
         echo "list_name=$LIST_NAME" >> "$GITHUB_OUTPUT"
 
+        # Validate user_id is not empty
+        if [ -z "${{ inputs.user_id }}" ]; then
+          echo "::error::user_id input is required and must not be empty"
+          exit 1
+        fi
+
         # Validate report file exists
         if [ ! -f "${{ inputs.report_path }}" ]; then
           echo "::error::Report file not found: ${{ inputs.report_path }}"
@@ -177,6 +186,9 @@ runs:
         if [ -n "$TOKEN" ]; then
           CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
         fi
+
+        # Add user ID header
+        CURL_ARGS+=(-H "x-user-id: ${{ inputs.user_id }}")
 
         HTTP_STATUS=$(curl "${CURL_ARGS[@]}" "${BACKEND_URL}/flagcicd-backend/list/header")
 
@@ -287,6 +299,9 @@ runs:
           CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
         fi
 
+        # Add user ID header
+        CURL_ARGS+=(-H "x-user-id: ${{ inputs.user_id }}")
+
         HTTP_STATUS=$(curl "${CURL_ARGS[@]}" "${BACKEND_URL}/flagcicd-backend/list/data/${LIST_CODE}")
 
         echo "HTTP status: $HTTP_STATUS"
@@ -332,6 +347,9 @@ runs:
         if [ -n "$TOKEN" ]; then
           CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
         fi
+
+        # Add user ID header
+        CURL_ARGS+=(-H "x-user-id: ${{ inputs.user_id }}")
 
         RESPONSE=$(curl "${CURL_ARGS[@]}" "$QUERY_URL")
 

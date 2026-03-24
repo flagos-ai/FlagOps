@@ -8,6 +8,7 @@ A reusable GitHub Action that uploads benchmark data to a backend service, confi
 |---|---|---|---|
 | `backend_url` | **yes** | — | Backend base URL (e.g. `http://host:port`) |
 | `report_path` | **yes** | — | Path to the benchmark JSON report file |
+| `user_id` | **yes** | — | User ID sent as `x-user-id` header (use a GitHub secret) |
 | `api_token` | no | `""` | Bearer token for authentication |
 | `list_code` | **yes** | — | List code identifier |
 | `list_name` | no | `list_code` value | List display name (defaults to `list_code` if empty) |
@@ -48,6 +49,7 @@ steps:
     with:
       backend_url: 'http://10.1.4.167:30180'
       report_path: 'benchmark_metrics.json'
+      user_id: ${{ secrets.FLAGOPS_USER_ID }}
       list_code: 'benchmark-list'
       list_name: 'Benchmark Results'
       header_config: |
@@ -66,6 +68,7 @@ steps:
     with:
       backend_url: 'http://10.1.4.167:30180'
       report_path: 'benchmark_metrics.json'
+      user_id: ${{ secrets.FLAGOPS_USER_ID }}
       list_code: 'perf-test'
       header_config: |
         [{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},
@@ -155,7 +158,8 @@ Example:
 ## Behavior
 
 1. **Resolve inputs**: Defaults are populated from GitHub context (`github.repository`, `github.run_id`, `github.sha`). `run_id` also defaults to `github.run_id`. If `list_name` is empty, it defaults to `list_code`.
-2. **Post header config**: Sends the header configuration to `{backend_url}/flagcicd-backend/list/header`. If the list code already exists, the step is treated as a no-op.
+2. **User identification**: `user_id` is sent on every request as the `x-user-id` HTTP header. Pass it via a GitHub secret — the action will fail immediately if the value is empty.
+3. **Post header config**: Sends the header configuration to `{backend_url}/flagcicd-backend/list/header`. If the list code already exists, the step is treated as a no-op.
 3. **Validate report**: Checks that every metric value is an object containing all expected sub-fields from `header_config`. Fails or warns based on `fail_on_error`.
 4. **Upload data**: Reads the report file and transforms entries using `header_config`. The first header field receives the metric key; subsequent fields extract the matching sub-field from the value object. POSTs to `{backend_url}/flagcicd-backend/list/data/{list_code}`. Each item includes `commit_id`, `repository_name`, `workflow_id`, and `run_id`.
 5. **Query data**: After a successful upload, queries the list data with pagination and sorting from `{backend_url}/flagcicd-backend/list/data/{list_code}`.

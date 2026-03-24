@@ -8,6 +8,9 @@ inputs:
   report_path:
     description: 'Path to the pytest JSON report file'
     required: true
+  user_id:
+    description: 'User ID sent as x-user-id header (treat as a secret)'
+    required: true
   api_token:
     description: 'Bearer token for authentication (optional)'
     required: false
@@ -96,6 +99,12 @@ runs:
         fi
         echo "pr_id=$PR_ID" >> "$GITHUB_OUTPUT"
 
+        # Validate user_id is not empty
+        if [ -z "${{ inputs.user_id }}" ]; then
+          echo "::error::user_id input is required and must not be empty"
+          exit 1
+        fi
+
         # Validate report file exists
         if [ ! -f "${{ inputs.report_path }}" ]; then
           echo "::error::Report file not found: ${{ inputs.report_path }}"
@@ -146,6 +155,9 @@ runs:
         if [ -n "$TOKEN" ]; then
           CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
         fi
+
+        # Add user ID header
+        CURL_ARGS+=(-H "x-user-id: ${{ inputs.user_id }}")
 
         # Execute
         HTTP_STATUS=$(curl "${CURL_ARGS[@]}" "${{ inputs.backend_url }}")
