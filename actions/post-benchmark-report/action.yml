@@ -41,6 +41,10 @@ inputs:
     description: 'GitHub Actions run ID (defaults to github.run_id)'
     required: false
     default: ''
+  runner_set_name:
+    description: 'Runner set name (optional)'
+    required: false
+    default: ''
   page_size:
     description: 'Number of items per page for query (default: 10)'
     required: false
@@ -113,6 +117,10 @@ runs:
         fi
         echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
+        # Resolve runner_name from runner environment
+        RUNNER_NAME="${{ runner.name }}"
+        echo "runner_name=$RUNNER_NAME" >> "$GITHUB_OUTPUT"
+
         # Resolve list_name
         LIST_NAME="${{ inputs.list_name }}"
         if [ -z "$LIST_NAME" ]; then
@@ -145,6 +153,8 @@ runs:
         echo "  workflow_id:     $WORKFLOW_ID"
         echo "  commit_id:       $COMMIT_ID"
         echo "  run_id:          $RUN_ID"
+        echo "  runner_name:     $RUNNER_NAME"
+        echo "  runner_set_name: ${{ inputs.runner_set_name }}"
         echo "  list_code:       ${{ inputs.list_code }}"
         echo "  list_name:       $LIST_NAME"
         echo "  report_path:     ${{ inputs.report_path }}"
@@ -264,6 +274,8 @@ runs:
           --arg workflow_id "${{ steps.resolve.outputs.workflow_id }}" \
           --arg commit_id "${{ steps.resolve.outputs.commit_id }}" \
           --arg run_id "${{ steps.resolve.outputs.run_id }}" \
+          --arg runner_name "${{ steps.resolve.outputs.runner_name }}" \
+          --arg runner_set_name "${{ inputs.runner_set_name }}" \
           --argjson header_config "$HEADER_CONFIG" \
           --slurpfile report "${{ inputs.report_path }}" \
           '{
@@ -276,8 +288,9 @@ runs:
                 commit_id: $commit_id,
                 repository_name: $repository_name,
                 workflow_id: $workflow_id,
-                run_id: $run_id
-              }
+                run_id: $run_id,
+                runner_name: $runner_name
+              } + (if $runner_set_name != "" then {runner_set_name: $runner_set_name} else {} end)
             ]
           }')
 

@@ -134,14 +134,16 @@ jobs:
           WORKFLOW=$(echo "$RESPONSE" | jq -r '.json.items[0].workflow_id // empty')
           COMMIT=$(echo "$RESPONSE" | jq -r '.json.items[0].commit_id // empty')
           RUN_ID=$(echo "$RESPONSE" | jq -r '.json.items[0].run_id // empty')
+          RUNNER_NAME=$(echo "$RESPONSE" | jq -r '.json.items[0].runner_name // empty')
 
           echo "repository_name = $REPO"
           echo "workflow_id     = $WORKFLOW"
           echo "commit_id       = $COMMIT"
           echo "run_id          = $RUN_ID"
+          echo "runner_name     = $RUNNER_NAME"
 
           # These should be non-empty when resolved from github context
-          for field in REPO WORKFLOW COMMIT RUN_ID; do
+          for field in REPO WORKFLOW COMMIT RUN_ID RUNNER_NAME; do
             value=$(eval echo "\$$field")
             if [ -n "$value" ]; then
               echo "$field resolved correctly: $value"
@@ -311,20 +313,29 @@ jobs:
           list_code: 'test-run-id'
           header_config: '[{"field":"metric","name":"Metric","required":true,"sortable":true,"type":"string"},{"field":"p50","name":"P50","required":true,"sortable":true,"type":"number"},{"field":"p99","name":"P99","required":true,"sortable":true,"type":"number"}]'
           run_id: 'custom-run-12345'
+          runner_set_name: 'linux-x64'
           fail_on_error: 'false'
 
-      - name: Verify custom run_id in upload response
+      - name: Verify custom run_id and runner_set_name in upload response
         run: |
           RESPONSE=$(cat /tmp/upload_response.txt 2>/dev/null || echo '{}')
           echo "Response: $RESPONSE"
 
           RUN_ID=$(echo "$RESPONSE" | jq -r '.json.items[0].run_id // empty')
+          RUNNER_SET_NAME=$(echo "$RESPONSE" | jq -r '.json.items[0].runner_set_name // empty')
           echo "run_id = $RUN_ID"
+          echo "runner_set_name = $RUNNER_SET_NAME"
 
           if [ "$RUN_ID" = "custom-run-12345" ]; then
             echo "Custom run_id passed correctly"
           else
             echo "::warning::Could not verify custom run_id (got: $RUN_ID)"
+          fi
+
+          if [ "$RUNNER_SET_NAME" = "linux-x64" ]; then
+            echo "runner_set_name passed correctly"
+          else
+            echo "::warning::Could not verify runner_set_name (got: $RUNNER_SET_NAME)"
           fi
 
   test-object-value-subfield-extraction:

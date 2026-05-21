@@ -17,6 +17,7 @@ A reusable GitHub Action that uploads benchmark data to a backend service, confi
 | `workflow_id` | no | `${{ github.run_id }}` | Workflow run ID |
 | `commit_id` | no | `${{ github.sha }}` | GitHub commit SHA |
 | `run_id` | no | `${{ github.run_id }}` | GitHub Actions run ID |
+| `runner_set_name` | no | `""` | Runner set name |
 | `page_size` | no | `10` | Number of items per page for query |
 | `page` | no | `1` | Page number for query |
 | `sort` | no | `created_at` | Sort field for query |
@@ -59,7 +60,7 @@ steps:
          {"field":"mean","name":"Mean","required":true,"sortable":true,"type":"number"}]
 ```
 
-`repository_name`, `workflow_id`, `commit_id`, and `run_id` are auto-detected from the GitHub context.
+`repository_name`, `workflow_id`, `commit_id`, `run_id`, and `runner_name` are auto-detected from the GitHub context.
 
 ### With authentication and query options
 
@@ -111,8 +112,8 @@ Transformed payload:
 ```json
 {
   "items": [
-    {"metric": "latency", "p50": 1.2, "p99": 3.4, "mean": 2.0, "commit_id": "...", ...},
-    {"metric": "throughput", "p50": 100, "p99": 80, "mean": 95, "commit_id": "...", ...}
+    {"metric": "latency", "p50": 1.2, "p99": 3.4, "mean": 2.0, "commit_id": "...", "runner_name": "...", ...},
+    {"metric": "throughput", "p50": 100, "p99": 80, "mean": 95, "commit_id": "...", "runner_name": "...", ...}
   ]
 }
 ```
@@ -157,11 +158,11 @@ Example:
 
 ## Behavior
 
-1. **Resolve inputs**: Defaults are populated from GitHub context (`github.repository`, `github.run_id`, `github.sha`). `run_id` also defaults to `github.run_id`. If `list_name` is empty, it defaults to `list_code`.
+1. **Resolve inputs**: Defaults are populated from GitHub context (`github.repository`, `github.run_id`, `github.sha`, `runner.name`). `run_id` also defaults to `github.run_id`. If `list_name` is empty, it defaults to `list_code`.
 2. **User identification**: `user_id` is sent on every request as the `x-user-id` HTTP header. Pass it via a GitHub secret — the action will fail immediately if the value is empty.
 3. **Post header config**: Sends the header configuration to `{backend_url}/flagcicd-backend/list/header`. If the list code already exists, the step is treated as a no-op.
 3. **Validate report**: Checks that every metric value is an object containing all expected sub-fields from `header_config`. Fails or warns based on `fail_on_error`.
-4. **Upload data**: Reads the report file and transforms entries using `header_config`. The first header field receives the metric key; subsequent fields extract the matching sub-field from the value object. POSTs to `{backend_url}/flagcicd-backend/list/data/{list_code}`. Each item includes `commit_id`, `repository_name`, `workflow_id`, and `run_id`.
+4. **Upload data**: Reads the report file and transforms entries using `header_config`. The first header field receives the metric key; subsequent fields extract the matching sub-field from the value object. POSTs to `{backend_url}/flagcicd-backend/list/data/{list_code}`. Each item includes `commit_id`, `repository_name`, `workflow_id`, `run_id`, `runner_name`, and `runner_set_name` when provided.
 5. **Query data**: After a successful upload, queries the list data with pagination and sorting from `{backend_url}/flagcicd-backend/list/data/{list_code}`.
 6. **Error handling**: Controlled by `fail_on_error`. When `true` (default), a failed request or missing report file fails the workflow step. When `false`, a warning is logged and the step succeeds.
 
@@ -232,7 +233,7 @@ Example:
      [{"field":"metric","name":"Metric",...}, {"field":"p50","name":"P50",...}, {"field":"p99","name":"P99",...}]
    ```
 
-5. **Metadata fields are injected automatically**: Each uploaded item automatically includes `commit_id`, `repository_name`, `workflow_id`, and `run_id`. You do not need to define these in the report file or `header_config`.
+5. **Metadata fields are injected automatically**: Each uploaded item automatically includes `commit_id`, `repository_name`, `workflow_id`, `run_id`, and `runner_name`. If `runner_set_name` is provided, it is included too. You do not need to define these in the report file or `header_config`.
 
    ```jsonc
    // The report file only needs business data:
@@ -246,7 +247,9 @@ Example:
      "commit_id": "abc123...",        // ← auto-injected
      "repository_name": "org/repo",   // ← auto-injected
      "workflow_id": "123456789",      // ← auto-injected
-     "run_id": "123456789"            // ← auto-injected
+     "run_id": "123456789",           // ← auto-injected
+     "runner_name": "runner-1",       // ← auto-injected
+     "runner_set_name": "linux-x64"   // ← included when provided
    }
    ```
 
