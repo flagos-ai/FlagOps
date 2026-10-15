@@ -22,13 +22,9 @@ inputs:
   report_path:
     description: 'Path to the pytest JSON report file'
     required: true
-  user_id:
-    description: 'User ID sent as x-user-id header (treat as a secret)'
-    required: true
   api_token:
-    description: 'Bearer token for authentication (optional)'
-    required: false
-    default: ''
+    description: 'Bearer token for authentication'
+    required: true
   file_format:
     description: 'File format identifier'
     required: false
@@ -121,9 +117,9 @@ runs:
         RUNNER_NAME="${{ runner.name }}"
         echo "runner_name=$RUNNER_NAME" >> "$GITHUB_OUTPUT"
 
-        # Validate user_id is not empty
-        if [ -z "${{ inputs.user_id }}" ]; then
-          echo "::error::user_id input is required and must not be empty"
+        # Validate api_token is not empty
+        if [ -z "${{ inputs.api_token }}" ]; then
+          echo "::error::api_token is required and must not be empty"
           exit 1
         fi
 
@@ -182,14 +178,9 @@ runs:
         # Add the file
         CURL_ARGS+=(-F "file=@${{ inputs.report_path }}")
 
-        # Conditionally add auth header
+        # Add auth header
         TOKEN="${{ inputs.api_token }}"
-        if [ -n "$TOKEN" ]; then
-          CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
-        fi
-
-        # Add user ID header
-        CURL_ARGS+=(-H "x-user-id: ${{ inputs.user_id }}")
+        CURL_ARGS+=(-H "Authorization: Bearer $TOKEN")
 
         # Execute (capture curl exit code without triggering bash -e)
         HTTP_STATUS=$(curl "${CURL_ARGS[@]}" "${{ inputs.backend_url }}") || CURL_EXIT=$?
