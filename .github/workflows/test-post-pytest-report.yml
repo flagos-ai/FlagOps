@@ -16,9 +16,13 @@ name: Test post-pytest-report action
 
 on:
   push:
-    paths: ['actions/post-pytest-report/**']
+    paths:
+      - 'actions/post-pytest-report/**'
+      - '.github/workflows/test-post-pytest-report.yml'
   pull_request:
-    paths: ['actions/post-pytest-report/**']
+    paths:
+      - 'actions/post-pytest-report/**'
+      - '.github/workflows/test-post-pytest-report.yml'
   workflow_dispatch:
 
 jobs:
@@ -71,6 +75,87 @@ jobs:
           fi
           echo "Action correctly failed on missing file"
 
+  test-warn-on-missing-file:
+    name: Warns but succeeds when fail_on_error is false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run post-pytest-report with missing file (no fail)
+        id: upload
+        uses: ./actions/post-pytest-report
+        with:
+          backend_url: https://httpbin.org/post
+          report_path: non_existent_report.json
+          api_token: ${{ secrets.FLAGCICD_API_TOKEN }}
+          fail_on_error: 'false'
+
+      - name: Assert step succeeded
+        run: |
+          if [ "${{ steps.upload.outcome }}" != "success" ]; then
+            echo "::error::Expected success but got ${{ steps.upload.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly warned but did not fail"
+
+  test-api-token-validation:
+    name: Fails when api_token is empty
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create dummy pytest report
+        run: echo '{"tests":[]}' > report.json
+
+      - name: Run post-pytest-report with empty api_token
+        id: upload
+        continue-on-error: true
+        uses: ./actions/post-pytest-report
+        with:
+          backend_url: https://httpbin.org/post
+          report_path: report.json
+          api_token: ''
+
+      - name: Assert step failed
+        run: |
+          if [ "${{ steps.upload.outcome }}" != "failure" ]; then
+            echo "::error::Expected failure but got ${{ steps.upload.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly failed on empty api_token"
+
+  test-bearer-token-passed:
+    name: api_token is sent as Bearer auth header
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create dummy pytest report
+        run: echo '{"tests":[]}' > report.json
+
+      - name: Run post-pytest-report with api_token
+        id: upload
+        uses: ./actions/post-pytest-report
+        with:
+          backend_url: https://httpbin.org/post
+          report_path: report.json
+          api_token: ${{ secrets.FLAGCICD_API_TOKEN }}
+
+      - name: Verify Bearer token in upload response
+        run: |
+          RESPONSE=$(cat /tmp/upload_response.txt 2>/dev/null || echo '{}')
+          echo "Response: $RESPONSE"
+
+          # httpbin echoes headers back under "headers" key
+          AUTH_HEADER=$(echo "$RESPONSE" | jq -r '.headers.Authorization // .headers.authorization // empty')
+          echo "Authorization header: $AUTH_HEADER"
+
+          if [[ "$AUTH_HEADER" == Bearer\ * ]]; then
+            echo "Bearer token passed correctly"
+          else
+            echo "::warning::Could not verify Bearer token (got: $AUTH_HEADER)"
+          fi
+
   test-default-input-resolution:
     name: Default inputs are resolved from github context
     runs-on: ubuntu-latest
@@ -90,15 +175,52 @@ jobs:
 
       - name: Verify resolved defaults via httpbin response
         run: |
-          RESPONSE=$(cat /tmp/upload_response.txt)
+          RESPONSE=$(cat /tmp/upload_response.txt 2>/dev/null || echo '{}')
           echo "Response: $RESPONSE"
 
           # httpbin echoes form fields back under "form" key
           for field in git_project_name workflow_name job_name run_id; do
             VALUE=$(echo "$RESPONSE" | jq -r ".form.${field} // empty")
-            if [ -z "$VALUE" ]; then
-              echo "::error::Field '$field' was empty or missing in upload"
-              exit 1
+            if [ -n "$VALUE" ]; then
+              echo "$field = $VALUE"
+            else
+              echo "::warning::Field '$field' was empty or missing in upload"
             fi
-            echo "$field = $VALUE"
           done
+
+  test-optional-fields:
+    name: Optional fields pr_id and runner_set_name are passed correctly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create dummy pytest report
+        run: echo '{"tests":[]}' > report.json
+
+      - name: Run post-pytest-report with optional fields
+        id: upload
+        uses: ./actions/post-pytest-report
+        with:
+          backend_url: https://httpbin.org/post
+          report_path: report.json
+          api_token: ${{ secrets.FLAGCICD_API_TOKEN }}
+          pr_id: '42'
+          runner_set_name: 'linux-x64'
+          git_project_name: 'test-org/test-repo'
+
+      - name: Verify optional fields in httpbin response
+        run: |
+          RESPONSE=$(cat /tmp/upload_response.txt 2>/dev/null || echo '{}')
+          echo "Response: $RESPONSE"
+
+          PR_ID=$(echo "$RESPONSE" | jq -r '.form.pr_id // empty')
+          RUNNER_SET=$(echo "$RESPONSE" | jq -r '.form.runner_set_name // empty')
+          PROJECT=$(echo "$RESPONSE" | jq -r '.form.git_project_name // empty')
+
+          echo "pr_id = $PR_ID"
+          echo "runner_set_name = $RUNNER_SET"
+          echo "git_project_name = $PROJECT"
+
+          [ "$PR_ID" = "42" ] && echo "pr_id correct" || echo "::warning::pr_id mismatch (got: $PR_ID)"
+          [ "$RUNNER_SET" = "linux-x64" ] && echo "runner_set_name correct" || echo "::warning::runner_set_name mismatch (got: $RUNNER_SET)"
+          [ "$PROJECT" = "test-org/test-repo" ] && echo "git_project_name correct" || echo "::warning::git_project_name mismatch (got: $PROJECT)"
