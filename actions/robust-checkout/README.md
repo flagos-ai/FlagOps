@@ -14,7 +14,7 @@ Designed for runners where `git fetch` can **hang** (not just fail) — a proble
 | `ssh-key` | no | `""` | SSH private key (deploy key); leave empty to disable SSH (e.g. fork PRs) |
 | `ref` | no | PR head SHA or `github.sha` | Ref/SHA to fetch and checkout |
 | `base-ref` | no | `""` | Extra ref to fetch (e.g. PR base SHA for `base...head` diffs) |
-| `connect-seconds` | no | `10` | Hard kill timeout for the connect probe (`git ls-remote`) |
+| `connect-seconds` | no | `30` | Hard kill timeout for the connect probe (`git ls-remote`) |
 | `probe-seconds` | no | `20` | Low-speed window: aborts if transfer stays below ~20 KiB/s for this long |
 | `transfer-seconds` | no | `180` | Catch-all hard kill for the full fetch (last resort) |
 | `rounds` | no | `3` | Number of SSH→HTTP rotation cycles before failing |
