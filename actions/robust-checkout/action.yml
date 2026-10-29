@@ -139,6 +139,19 @@ runs:
         try_fetch() {  # $1=label $2=url  (GIT_SSH_COMMAND set by caller if ssh)
           git remote remove origin 2>/dev/null || true
           git remote add origin "$2"
+          # A fetch killed by `timeout -s KILL` (SIGKILL, uncatchable) can't run
+          # its own cleanup, so it leaves lock files behind — most importantly
+          # .git/shallow.lock from a shallow/depth fetch, but also index.lock /
+          # fetch-head.lock. The NEXT fetch then aborts with "Unable to create
+          # '.../shallow.lock': File exists / Another git process seems to be
+          # running", so one killed round silently poisons every later round.
+          # Nothing else touches this repo (the only prior git was the one we
+          # just killed), so clearing stale *.lock here is safe and is the only
+          # way the retry loop can actually recover from a hard-killed fetch.
+          rm -f "$GITHUB_WORKSPACE/.git/shallow.lock" \
+                "$GITHUB_WORKSPACE/.git/index.lock" \
+                "$GITHUB_WORKSPACE/.git/fetch-head.lock" \
+                "$GITHUB_WORKSPACE/.git/"*.lock 2>/dev/null || true
           local start end ms
           start=$(date +%s%N)
           # Stage 1: connect probe. Fast reject of a wedged link.
